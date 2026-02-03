@@ -1,6 +1,8 @@
 package com.guvi.money_manager_backend.service;
 
+import com.guvi.money_manager_backend.dto.CategorySummary;
 import com.guvi.money_manager_backend.dto.IncomeExpenseSummary;
+import com.guvi.money_manager_backend.dto.TransferRequest;
 import com.guvi.money_manager_backend.model.Division;
 import com.guvi.money_manager_backend.model.Transaction;
 import com.guvi.money_manager_backend.model.TransactionType;
@@ -11,6 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +112,58 @@ public class TransactionService {
 
         return calculateSummary(start, end);
     }
+    public List<CategorySummary> getCategorySummary() {
+
+        List<Transaction> transactions = transactionRepository.findAll();
+
+        Map<String, Double> categoryMap = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.EXPENSE)
+                .collect(Collectors.groupingBy(
+                        Transaction::getCategory,
+                        Collectors.summingDouble(Transaction::getAmount)
+                ));
+
+        return categoryMap.entrySet().stream()
+                .map(e -> new CategorySummary(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    public void transferAmount(TransferRequest request) {
+
+        String transferId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Debit (Expense)
+        Transaction debit = Transaction.builder()
+                .type(TransactionType.EXPENSE)
+                .amount(request.getAmount())
+                .category("Transfer")
+                .division(Division.PERSONAL)
+                .description("Transfer to " + request.getToAccount())
+                .account(request.getFromAccount())
+                .dateTime(now)
+                .createdAt(now)
+                .transferId(transferId)
+                .build();
+
+        // Credit (Income)
+        Transaction credit = Transaction.builder()
+                .type(TransactionType.INCOME)
+                .amount(request.getAmount())
+                .category("Transfer")
+                .division(Division.PERSONAL)
+                .description("Transfer from " + request.getFromAccount())
+                .account(request.getToAccount())
+                .dateTime(now)
+                .createdAt(now)
+                .transferId(transferId)
+                .build();
+
+        transactionRepository.save(debit);
+        transactionRepository.save(credit);
+    }
+
+
 
 
 

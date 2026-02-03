@@ -1,6 +1,8 @@
 package com.guvi.money_manager_backend.controller;
 
+import com.guvi.money_manager_backend.dto.CategorySummary;
 import com.guvi.money_manager_backend.dto.IncomeExpenseSummary;
+import com.guvi.money_manager_backend.dto.TransferRequest;
 import com.guvi.money_manager_backend.model.Division;
 import com.guvi.money_manager_backend.model.Transaction;
 import com.guvi.money_manager_backend.service.TransactionService;
@@ -84,6 +86,18 @@ public class TransactionController {
     public ResponseEntity<IncomeExpenseSummary> yearlySummary() {
         return ResponseEntity.ok(transactionService.getYearlySummary());
     }
+
+    @GetMapping("/summary/category")
+    public ResponseEntity<List<CategorySummary>> categorySummary() {
+        return ResponseEntity.ok(transactionService.getCategorySummary());
+    }
+
+    @PostMapping("/transfer")
+    public ResponseEntity<String> transfer(@RequestBody TransferRequest request) {
+        transactionService.transferAmount(request);
+        return ResponseEntity.ok("Transfer completed successfully");
+    }
+
 
 
 
