@@ -1,6 +1,9 @@
 package com.guvi.money_manager_backend.service;
 
+import com.guvi.money_manager_backend.dto.IncomeExpenseSummary;
+import com.guvi.money_manager_backend.model.Division;
 import com.guvi.money_manager_backend.model.Transaction;
+import com.guvi.money_manager_backend.model.TransactionType;
 import com.guvi.money_manager_backend.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,4 +50,66 @@ public class TransactionService {
 
         return transactionRepository.save(existing);
     }
+
+    // Filter by division
+    public List<Transaction> getByDivision(Division division) {
+        return transactionRepository.findByDivision(division);
+    }
+
+    // Filter by category
+    public List<Transaction> getByCategory(String category) {
+        return transactionRepository.findByCategory(category);
+    }
+
+    // Filter between two dates
+    public List<Transaction> getBetweenDates(LocalDateTime start, LocalDateTime end) {
+        return transactionRepository.findByDateTimeBetween(start, end);
+    }
+
+    public IncomeExpenseSummary getWeeklySummary() {
+
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusDays(7);
+
+        return calculateSummary(start, end);
+    }
+    private IncomeExpenseSummary calculateSummary(
+            LocalDateTime start,
+            LocalDateTime end) {
+
+        List<Transaction> transactions =
+                transactionRepository.findByDateTimeBetween(start, end);
+
+        double income = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.INCOME)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+
+        double expense = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.EXPENSE)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+
+        return new IncomeExpenseSummary(income, expense);
+    }
+
+    public IncomeExpenseSummary getMonthlySummary() {
+
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusMonths(1);
+
+        return calculateSummary(start, end);
+    }
+    public IncomeExpenseSummary getYearlySummary() {
+
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusYears(1);
+
+        return calculateSummary(start, end);
+    }
+
+
+
+
+
 }
